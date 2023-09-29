@@ -24,7 +24,7 @@ def create_slug():
 
 class Product(models.Model):
     name = models.CharField(max_length=20, default="")
-    slug = models.SlugField(max_length=40, unique=True)
+    slug = models.SlugField(max_length=40, default=create_slug, unique=True)
     shoppingcarted = models.ManyToManyField(User, related_name="product_shoppingcarted", blank=True)
     liked = models.ManyToManyField(User, related_name="product_likes", blank=True)
     condition = models.IntegerField(choices=ConditionOPTIONS, default=0)
