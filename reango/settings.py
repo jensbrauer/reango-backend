@@ -63,9 +63,13 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK = {'DEFAULT_PERMISSION_CLASSES':['rest_framework.permissions.AllowAny']}
 
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_ALL_ORIGINS = False
 
-
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://jensbrauer.github.io/reango-frontend/",
+    # Add more allowed origins as needed
+]
 ROOT_URLCONF = 'reango.urls'
 
 TEMPLATES = [
