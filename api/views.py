@@ -23,8 +23,30 @@ class CreateProductView(APIView):
     serializer_class = CreateProductSerializer
 
     def get(self, request):
+        # Get the 'slug' parameter from the query string
+        slug = request.query_params.get('slug')
+
+        # Check if 'slug' is provided in the query string
+        if slug:
+            try:
+                # Retrieve the product based on the 'slug'
+                product = Product.objects.get(slug=slug)
+                serialized_product = {
+                    "name": product.name,
+                    "brand": product.brand,
+                    "slug": product.slug,
+                }
+                return Response(serialized_product)
+            except Product.DoesNotExist:
+                # Return a 404 response if the product does not exist
+                return Response(
+                    {"error": "Product not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
         products = [{"name": data.name,
-                    "brand": data.brand}
+                    "brand": data.brand,
+                    "slug": data.slug,}
                     for data in Product.objects.all()]
         return Response(products)
 
