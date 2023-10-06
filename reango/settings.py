@@ -33,7 +33,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['https://reango-48565de87753.herokuapp.com/', '127.0.0.1', 'localhost', 'localhost:3000']
+ALLOWED_HOSTS = ['reango-48565de87753.herokuapp.com', '127.0.0.1', 'localhost', 'localhost:3000']
 
 
 # Application definition
