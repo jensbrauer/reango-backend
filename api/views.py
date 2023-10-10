@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework import generics, status
 from .models import Product
 from .serializers import ProductSerializer, CreateProductSerializer
+from .filters import ProductFilter
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -12,7 +13,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 class ProductView(generics.CreateAPIView):
@@ -24,10 +24,12 @@ class CreateProductView(APIView):
 
     def get(self, request):
         # Get the 'slug' parameter from the query string
-        slug = request.query_params.get('slug')
-
+        #slug = request.query_params.get('slug')
+        #print(slug)
         # Check if 'slug' is provided in the query string
-        if slug:
+        list = ProductFilter(request.GET, queryset=Product.objects.all())
+
+        """ if slug:
             try:
                 # Retrieve the product based on the 'slug'
                 product = Product.objects.get(slug=slug)
@@ -35,6 +37,7 @@ class CreateProductView(APIView):
                     "name": product.name,
                     "brand": product.brand,
                     "slug": product.slug,
+                    "product_img": product.product_img.url
                 }
                 return Response(serialized_product)
             except Product.DoesNotExist:
@@ -43,11 +46,15 @@ class CreateProductView(APIView):
                     {"error": "Product not found"},
                     status=status.HTTP_404_NOT_FOUND
                 )
-            
+             """
         products = [{"name": data.name,
                     "brand": data.brand,
-                    "slug": data.slug,}
-                    for data in Product.objects.all()]
+                    "slug": data.slug,
+                    "condition": data.condition,
+                    "sold_by": data.sold_by,
+                    "product_img": data.product_img.url  # Assuming product_img is a CloudinaryField
+                    }
+                    for data in list.qs]
         return Response(products)
 
     def post(self, request, format=None):
