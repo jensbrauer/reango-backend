@@ -23,12 +23,12 @@ class CreateProductView(APIView):
     serializer_class = CreateProductSerializer
 
     def get(self, request):
-        # Get the 'slug' parameter from the query string
-        #slug = request.query_params.get('slug')
-        #print(slug)
-        # Check if 'slug' is provided in the query string
+        print('NEW QUERY')
+        print(request.GET)
         list = ProductFilter(request.GET, queryset=Product.objects.all())
-
+        
+        #print(list.qs.query)
+        #print("Filtered Queryset:", list.qs)
         """ if slug:
             try:
                 # Retrieve the product based on the 'slug'
@@ -51,10 +51,12 @@ class CreateProductView(APIView):
                     "brand": data.brand,
                     "slug": data.slug,
                     "condition": data.condition,
+                    "user_type": data.user_type,
                     "sold_by": data.sold_by,
                     "product_img": data.product_img.url  # Assuming product_img is a CloudinaryField
                     }
                     for data in list.qs]
+        #print("Final List of Products:", products)
         return Response(products)
 
     def post(self, request, format=None):

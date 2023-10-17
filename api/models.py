@@ -10,6 +10,7 @@ ConditionOPTIONS = ((0, 'Ragged'), (1, 'Worn'), (2, 'Great'), (3, 'Band new'))
 CategoryOPTIONS = ((0, 'Headwear'), (1, 'Tops'), (2, 'Trousers'), (3, 'Shoes'))
 BrandOPTIONS = ((0, 'Other'), (1, 'Nike'), (2, 'Adidas'), (3, 'GUCCI'))
 GenderOPTIONS = ((0, 'Male'), (1, 'Female'), (2, 'Unisex'))
+UserTypeOPTIONS = (('STORE', 'STORE'), ('FEATURED', 'FEATURED'), ('USER', 'USER'))
 
 def create_slug():
     length = 40
@@ -33,6 +34,7 @@ class Product(models.Model):
     gender = models.IntegerField(choices=GenderOPTIONS, default=0)
     brand = models.IntegerField(choices=BrandOPTIONS, default=0)
     category = models.IntegerField(choices=CategoryOPTIONS, default=0)
+    user_type = models.CharField(max_length=20, choices=UserTypeOPTIONS, default='USER')
     prize = models.IntegerField(default="0")
     date_added = models.DateTimeField(auto_now_add=True)
     product_img = CloudinaryField('image', default='placeholder')

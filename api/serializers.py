@@ -7,7 +7,8 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ('id', 'name', 'slug', 'shoppingcarted', 'liked',
                   'condition', 'sold_by', 'size', 'gender', 'brand',
-                    'category', 'prize', 'date_added', 'product_img')
+                    'category', 'prize', 'date_added', 'product_img',
+                    'user_type',)
 
 
 class CreateProductSerializer(serializers.ModelSerializer):
@@ -15,4 +16,4 @@ class CreateProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ('name', 'condition', 'sold_by', 'size', 'gender', 'brand',
-                    'category', 'prize', 'product_img')
+                    'category', 'prize', 'product_img', 'user_type')
