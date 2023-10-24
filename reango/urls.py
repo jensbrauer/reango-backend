@@ -7,6 +7,12 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
+
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('api.urls')),

@@ -23,30 +23,7 @@ class CreateProductView(APIView):
     serializer_class = CreateProductSerializer
 
     def get(self, request):
-        print('NEW QUERY')
-        print(request.GET)
         list = ProductFilter(request.GET, queryset=Product.objects.all())
-        
-        #print(list.qs.query)
-        #print("Filtered Queryset:", list.qs)
-        """ if slug:
-            try:
-                # Retrieve the product based on the 'slug'
-                product = Product.objects.get(slug=slug)
-                serialized_product = {
-                    "name": product.name,
-                    "brand": product.brand,
-                    "slug": product.slug,
-                    "product_img": product.product_img.url
-                }
-                return Response(serialized_product)
-            except Product.DoesNotExist:
-                # Return a 404 response if the product does not exist
-                return Response(
-                    {"error": "Product not found"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-             """
         products = [{"name": data.name,
                     "brand": data.brand,
                     "slug": data.slug,
@@ -56,7 +33,6 @@ class CreateProductView(APIView):
                     "product_img": data.product_img.url  # Assuming product_img is a CloudinaryField
                     }
                     for data in list.qs]
-        #print("Final List of Products:", products)
         return Response(products)
 
     def post(self, request, format=None):
@@ -92,6 +68,7 @@ class CreateProductView(APIView):
 class HomeView(APIView):
     permission_classes = (IsAuthenticated, )
     def get(self, request):
+        print(request.user)
         content = {'message': 'Welcome to the JWT Authentication page using React Js and Django!'}
         return Response(content)
 
@@ -106,3 +83,63 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+class UserView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request):
+        list = ProductFilter(request.GET, queryset=Product.objects.filter(sold_by=request.user))
+        products = [{"name": data.name,
+                    "condition": data.condition,
+                    "size": data.size,
+                    "gender": data.gender,
+                    "brand": data.brand,
+                    #"slug": data.slug,
+                    #"user_type": data.user_type,
+                    #"sold_by": data.sold_by,
+                    "category": data.category,
+                    "prize": data.prize,
+                    "product_img": data.product_img.url  # Assuming product_img is a CloudinaryField
+                    }
+                    for data in list.qs]
+        return Response(products)
+    
+
+    def post(self, request):
+        print(request.data)
+        data = request.data
+        name = data.get('name')
+        print(name)
+        condition = data.get('condition')
+        print(condition)
+        sold_by = request.user
+        print(sold_by)
+        size = data.get('size')
+        print(size)
+        gender = data.get('gender')
+        print(gender)
+        brand = data.get('brand')
+        print(brand)
+        category = data.get('category')
+        print(category)
+        prize = 35
+        product_img = request.FILES.get('product_img')
+        print(product_img)
+        product = Product(name=name, condition=condition, sold_by=sold_by,
+                           size=size, gender=gender, brand=brand, category=category,
+                             prize=prize, product_img=product_img)
+        product.save()
+
+
+        return Response('hej')
+
+
+class LikeView(APIView):
+    def post(self, request):
+        print(request.data.get('slug'))
+        return Response('liked')
+    
+
+class CartView(APIView):
+    def post(self, request):
+        print(request.data.get('slug'))
+        return Response('carted')
