@@ -13,6 +13,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from django.shortcuts import get_object_or_404
+
 
 # Create your views here.
 class ProductView(generics.CreateAPIView):
@@ -134,12 +136,59 @@ class UserView(APIView):
 
 
 class LikeView(APIView):
+    permission_classes = (IsAuthenticated,)
     def post(self, request):
+        slug = request.data.get('slug')
+        product = get_object_or_404(Product, slug=slug)
+
+        if product.liked.filter(id=request.user.id).exists():
+            print('henlo')
+            product.liked.remove(request.user)
+        else :
+            print('babai')
+            product.liked.add(request.user)
+
         print(request.data.get('slug'))
         return Response('liked')
     
 
 class CartView(APIView):
+    permission_classes = (IsAuthenticated,)
     def post(self, request):
+        slug = request.data.get('slug')
+        product = get_object_or_404(Product, slug=slug)
+
+        if product.shoppingcarted.filter(id=request.user.id).exists():
+            print('henlo')
+            product.shoppingcarted.remove(request.user)
+        else :
+            print('babai')
+            product.shoppingcarted.add(request.user)
+
         print(request.data.get('slug'))
         return Response('carted')
+
+
+class MyLikedView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request):
+        #queryset = Product.objects.all()
+
+        
+        list = ProductFilter(request.GET, queryset=Product.objects.filter(sold_by=request.user))
+        products = [{"name": data.name,
+                    "condition": data.condition,
+                    "size": data.size,
+                    "gender": data.gender,
+                    "brand": data.brand,
+                    #"slug": data.slug,
+                    #"user_type": data.user_type,
+                    #"sold_by": data.sold_by,
+                    "category": data.category,
+                    "prize": data.prize,
+                    "product_img": data.product_img.url  # Assuming product_img is a CloudinaryField
+                    }
+                    for data in list.qs
+                    if request.user in data.liked.all()]
+        #print(products)
+        return Response(products)
