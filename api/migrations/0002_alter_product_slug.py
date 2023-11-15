@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='product',
             name='slug',
-            field=models.SlugField(default=api.models.create_slug, max_length=40, unique=True),
+            field=models.SlugField(default=api.models.create_product_slug, max_length=40, unique=True),
         ),
     ]

@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import generics, status
-from .models import Product
+from .models import Product, UserProfile
 from .serializers import ProductSerializer, CreateProductSerializer
 from .filters import ProductFilter
 from rest_framework.views import APIView
@@ -25,6 +25,7 @@ class CreateProductView(APIView):
     serializer_class = CreateProductSerializer
 
     def get(self, request):
+        print(request.user)
         list = ProductFilter(request.GET, queryset=Product.objects.all())
         products = [{"name": data.name,
                     "brand": data.brand,
@@ -32,7 +33,10 @@ class CreateProductView(APIView):
                     "condition": data.condition,
                     "user_type": data.user_type,
                     "sold_by": data.sold_by,
-                    "product_img": data.product_img.url  # Assuming product_img is a CloudinaryField
+                    "prize": data.prize,
+                    "product_img": data.product_img.url,  # Assuming product_img is a CloudinaryField
+                    "is_liked": 'yes' if request.user in data.liked.all() else 'no',
+                    "is_carted": 'yes' if request.user in data.shoppingcarted.all() else 'no',
                     }
                     for data in list.qs]
         return Response(products)
@@ -175,7 +179,7 @@ class MyLikedView(APIView):
         #queryset = Product.objects.all()
 
         
-        list = ProductFilter(request.GET, queryset=Product.objects.filter(sold_by=request.user))
+        list = ProductFilter(request.GET, queryset=Product.objects.all())
         products = [{"name": data.name,
                     "condition": data.condition,
                     "size": data.size,
@@ -192,3 +196,51 @@ class MyLikedView(APIView):
                     if request.user in data.liked.all()]
         #print(products)
         return Response(products)
+
+class MyCartView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request):
+        #queryset = Product.objects.all()
+
+        
+        list = ProductFilter(request.GET, queryset=Product.objects.all())
+        products = [{"name": data.name,
+                    "condition": data.condition,
+                    "size": data.size,
+                    "gender": data.gender,
+                    "brand": data.brand,
+                    #"slug": data.slug,
+                    #"user_type": data.user_type,
+                    #"sold_by": data.sold_by,
+                    "category": data.category,
+                    "prize": data.prize,
+                    "product_img": data.product_img.url  # Assuming product_img is a CloudinaryField
+                    }
+                    for data in list.qs
+                    if request.user in data.shoppingcarted.all()]
+        #print(products)
+        return Response(products)
+
+class NewsFeed(APIView):
+    def get(self, request):
+        feed_products = []
+        authent_user = get_object_or_404(UserProfile, username=request.user)
+
+        queryset=Product.objects.all()
+        list = UserProfile.objects.all()
+
+        followed_users = authent_user.follows.all()
+        for product in queryset:
+            for user in followed_users:
+                if user.username == product.sold_by:
+                    feed_products.append({'name': product.name, 'sold_by': user.username})
+
+        products = [{"username": data.username,
+                    }
+                    for data in list
+                    if request.user in data.follows.all()]
+
+        print('henlo')
+        print(products)
+        #queryset = Product.objects.all()
+        return Response(feed_products)
