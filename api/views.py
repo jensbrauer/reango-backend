@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import generics, status
-from .models import Product, UserProfile
-from .serializers import ProductSerializer, CreateProductSerializer
+from .models import Product, UserProfile, User
+from .serializers import ProductSerializer, CreateProductSerializer, UserProfileSerializer, ProductDetailSerializer
 from .filters import ProductFilter
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,6 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 
 # Create your views here.
@@ -23,7 +24,7 @@ class ProductView(generics.CreateAPIView):
 
 class CreateProductView(APIView):
     serializer_class = CreateProductSerializer
-
+    
     def get(self, request):
         print(request.user)
         list = ProductFilter(request.GET, queryset=Product.objects.all())
@@ -32,13 +33,15 @@ class CreateProductView(APIView):
                     "slug": data.slug,
                     "condition": data.condition,
                     "user_type": data.user_type,
-                    "sold_by": data.sold_by,
+                    "uploaded_by": data.uploaded_by.username,
+                    "profile_slug": get_object_or_404(UserProfile, username=data.uploaded_by).slug,
                     "prize": data.prize,
                     "product_img": data.product_img.url,  # Assuming product_img is a CloudinaryField
                     "is_liked": 'yes' if request.user in data.liked.all() else 'no',
                     "is_carted": 'yes' if request.user in data.shoppingcarted.all() else 'no',
                     }
                     for data in list.qs]
+        print(products)
         return Response(products)
 
     def post(self, request, format=None):
@@ -107,30 +110,22 @@ class UserView(APIView):
                     "product_img": data.product_img.url  # Assuming product_img is a CloudinaryField
                     }
                     for data in list.qs]
+        print(products)
         return Response(products)
     
 
     def post(self, request):
-        print(request.data)
         data = request.data
         name = data.get('name')
-        print(name)
         condition = data.get('condition')
-        print(condition)
-        sold_by = request.user
-        print(sold_by)
+        uploaded_by = request.user
         size = data.get('size')
-        print(size)
         gender = data.get('gender')
-        print(gender)
         brand = data.get('brand')
-        print(brand)
         category = data.get('category')
-        print(category)
         prize = 35
         product_img = request.FILES.get('product_img')
-        print(product_img)
-        product = Product(name=name, condition=condition, sold_by=sold_by,
+        product = Product(name=name, condition=condition, uploaded_by=uploaded_by,
                            size=size, gender=gender, brand=brand, category=category,
                              prize=prize, product_img=product_img)
         product.save()
@@ -231,16 +226,95 @@ class NewsFeed(APIView):
 
         followed_users = authent_user.follows.all()
         for product in queryset:
+            #print(product.uploaded_by)
             for user in followed_users:
-                if user.username == product.sold_by:
-                    feed_products.append({'name': product.name, 'sold_by': user.username})
+                if user == product.uploaded_by:
+                    date_added_str = product.date_added.astimezone(timezone.utc).strftime('%Y-%m-%d')
+                    
+                    feed_products.append({'name': product.name,
+                                          'product_img': product.product_img.url,
+                                          'profile_pic': get_object_or_404(UserProfile, username=user).profile_pic.url,
+                                          'sold_by': user.username,
+                                          'profile_slug':  get_object_or_404(UserProfile, username=user).slug,
+                                          'uploaded': date_added_str})
 
-        products = [{"username": data.username,
+        """ products = [{"username": data.username,
                     }
                     for data in list
-                    if request.user in data.follows.all()]
+                    if request.user in data.follows.all()] """
 
         print('henlo')
-        print(products)
+        #print(feed_products)
         #queryset = Product.objects.all()
         return Response(feed_products)
+
+class ProfileView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request):
+        slug = request.query_params.get('slug')
+        profile = get_object_or_404(UserProfile, slug=slug)
+
+        # Serialize the profile data using UserProfileSerializer
+        serializer = UserProfileSerializer(profile)
+
+        # Return the serialized data as a JSON response
+        return Response(serializer.data)
+    
+class followView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def post(self, request):
+        #Viewed profile
+        profile_username = request.data.get('username')
+        print(profile_username)
+        
+        profile = get_object_or_404(User, username=profile_username)
+        print(profile)
+
+        #profile_account = get_object_or_404(User, username=profile.username)
+        #print(profile_account)
+
+        #Requester
+        requester = get_object_or_404(UserProfile, username=request.user)
+        print(requester.username)
+
+        if requester.follows.filter(id=profile.id).exists():
+            print('works')
+            requester.follows.remove(profile)
+        else :
+            print('dont work')
+            requester.follows.add(profile)
+
+        
+        return Response('liked')
+
+class ProductList(APIView):
+    def get(self, request):
+        #profile = request.query_params.get('slug')
+        profile = get_object_or_404(UserProfile, slug=request.query_params.get('slug'))
+        user_profile = get_object_or_404(User, username=profile.username)
+        list = Product.objects.filter(uploaded_by=user_profile)
+        products = [ProductDetailSerializer(data).data
+                    for data in list]
+        return Response(products)
+
+class ProductDetails(APIView):
+    def get(self, request):
+        #profile = request.query_params.get('slug')
+        print(request.query_params.get('product_slug'))
+        product = get_object_or_404(Product, slug=request.query_params.get('product_slug'))
+        #profile = get_object_or_404(UserProfile, slug=request.query_params.get('slug'))
+        #user_profile = get_object_or_404(User, username=profile.username)
+        #list = Product.objects.filter(uploaded_by=user_profile)
+        product_response = ProductDetailSerializer(product).data
+        print(product_response)
+        return Response(product_response)
+
+class UserHome(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request):
+        user = request.user
+        profile = get_object_or_404(UserProfile, username=user)
+        # Serialize the profile data using UserProfileSerializer
+        serializer = UserProfileSerializer(profile)
+        # Return the serialized data as a JSON response
+        return Response(serializer.data)

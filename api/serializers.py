@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product
+from .models import Product, UserProfile
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -16,4 +16,27 @@ class CreateProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ('name', 'condition', 'sold_by', 'size', 'gender', 'brand',
+                    'category', 'prize', 'product_img', 'user_type')
+        
+class UserProfileSerializer(serializers.ModelSerializer):
+    profile_pic = serializers.SerializerMethodField()
+    username = serializers.CharField(source='username.username')
+
+    class Meta:
+        model = UserProfile
+        fields = ('username', 'description', 'location', 'profile_pic')
+
+    def get_profile_pic(self, obj):
+        # Customize the serialization of the 'profile_pic' field
+        if obj.profile_pic:
+            return obj.profile_pic.url
+        else:
+            return None
+        
+class ProductDetailSerializer(serializers.ModelSerializer):
+    product_img = serializers.ImageField()
+    class Meta:
+        model = Product
+        fields = ('name', 'slug', 'shoppingcarted', 'liked', 'uploaded_by', 'date_added',
+                    'condition', 'sold_by', 'size', 'gender', 'brand',
                     'category', 'prize', 'product_img', 'user_type')

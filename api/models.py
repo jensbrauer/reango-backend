@@ -41,7 +41,7 @@ class Product(models.Model):
     condition = models.IntegerField(choices=ConditionOPTIONS, default=0)
     
     sold_by = models.CharField(max_length=100)
-    #uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    uploaded_by = models.ForeignKey(User, null=True, on_delete=models.CASCADE)
 
     size = models.IntegerField(choices=SizeOPTIONS, default=0)
     gender = models.IntegerField(choices=GenderOPTIONS, default=0)
