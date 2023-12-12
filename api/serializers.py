@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Product, UserProfile
+from django.shortcuts import get_object_or_404
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -35,8 +36,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
         
 class ProductDetailSerializer(serializers.ModelSerializer):
     product_img = serializers.ImageField()
+    uploaded_by = serializers.CharField(source='uploaded_by.username')
     class Meta:
         model = Product
         fields = ('name', 'slug', 'shoppingcarted', 'liked', 'uploaded_by', 'date_added',
                     'condition', 'sold_by', 'size', 'gender', 'brand',
                     'category', 'prize', 'product_img', 'user_type')
+
+class ProductListSerializer(serializers.ModelSerializer):
+    product_img = serializers.ImageField()
+    uploaded_by = serializers.CharField(source='uploaded_by.username')
+    class Meta:
+        model = Product
+        fields = ('name', 'slug', 'liked', 'uploaded_by', 'date_added',
+                    'size', 'prize', 'product_img')
+     

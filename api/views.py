@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import generics, status
 from .models import Product, UserProfile, User
-from .serializers import ProductSerializer, CreateProductSerializer, UserProfileSerializer, ProductDetailSerializer
+from .serializers import ProductSerializer, CreateProductSerializer, UserProfileSerializer, ProductDetailSerializer, ProductListSerializer
 from .filters import ProductFilter
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -22,7 +22,7 @@ class ProductView(generics.CreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
 
-class CreateProductView(APIView):
+""" class CreateProductView(APIView):
     serializer_class = CreateProductSerializer
     
     def get(self, request):
@@ -71,7 +71,7 @@ class CreateProductView(APIView):
             product.save()
             return Response(CreateProductSerializer(product).data, status=status.HTTP_201_CREATED)
         else:
-            print("Validation errors", serializer.errors)
+            print("Validation errors", serializer.errors) """
 
 
 class HomeView(APIView):
@@ -168,53 +168,9 @@ class CartView(APIView):
         return Response('carted')
 
 
-class MyLikedView(APIView):
-    permission_classes = (IsAuthenticated,)
-    def get(self, request):
-        #queryset = Product.objects.all()
 
-        
-        list = ProductFilter(request.GET, queryset=Product.objects.all())
-        products = [{"name": data.name,
-                    "condition": data.condition,
-                    "size": data.size,
-                    "gender": data.gender,
-                    "brand": data.brand,
-                    #"slug": data.slug,
-                    #"user_type": data.user_type,
-                    #"sold_by": data.sold_by,
-                    "category": data.category,
-                    "prize": data.prize,
-                    "product_img": data.product_img.url  # Assuming product_img is a CloudinaryField
-                    }
-                    for data in list.qs
-                    if request.user in data.liked.all()]
-        #print(products)
-        return Response(products)
 
-class MyCartView(APIView):
-    permission_classes = (IsAuthenticated,)
-    def get(self, request):
-        #queryset = Product.objects.all()
 
-        
-        list = ProductFilter(request.GET, queryset=Product.objects.all())
-        products = [{"name": data.name,
-                    "condition": data.condition,
-                    "size": data.size,
-                    "gender": data.gender,
-                    "brand": data.brand,
-                    #"slug": data.slug,
-                    #"user_type": data.user_type,
-                    #"sold_by": data.sold_by,
-                    "category": data.category,
-                    "prize": data.prize,
-                    "product_img": data.product_img.url  # Assuming product_img is a CloudinaryField
-                    }
-                    for data in list.qs
-                    if request.user in data.shoppingcarted.all()]
-        #print(products)
-        return Response(products)
 
 class NewsFeed(APIView):
     def get(self, request):
@@ -236,7 +192,12 @@ class NewsFeed(APIView):
                                           'profile_pic': get_object_or_404(UserProfile, username=user).profile_pic.url,
                                           'sold_by': user.username,
                                           'profile_slug':  get_object_or_404(UserProfile, username=user).slug,
-                                          'uploaded': date_added_str})
+                                          'uploaded': date_added_str,
+                                          'gender': product.gender,
+                                          'brand': product.brand,
+                                          'prize': product.prize,
+                                          'size': product.size,
+                                          })
 
         """ products = [{"username": data.username,
                     }
@@ -251,8 +212,14 @@ class NewsFeed(APIView):
 class ProfileView(APIView):
     permission_classes = (IsAuthenticated,)
     def get(self, request):
-        slug = request.query_params.get('slug')
-        profile = get_object_or_404(UserProfile, slug=slug)
+        #slug = request.query_params.get('slug')
+        user_profile_username = request.query_params.get('username')
+        print(user_profile_username)
+        user = get_object_or_404(User, username=user_profile_username)
+        print(user)
+
+        profile = get_object_or_404(UserProfile, username=user)
+        print(profile)
 
         # Serialize the profile data using UserProfileSerializer
         serializer = UserProfileSerializer(profile)
@@ -287,27 +254,13 @@ class followView(APIView):
         
         return Response('liked')
 
-class ProductList(APIView):
-    def get(self, request):
-        #profile = request.query_params.get('slug')
-        profile = get_object_or_404(UserProfile, slug=request.query_params.get('slug'))
-        user_profile = get_object_or_404(User, username=profile.username)
-        list = Product.objects.filter(uploaded_by=user_profile)
-        products = [ProductDetailSerializer(data).data
-                    for data in list]
-        return Response(products)
+from rest_framework import status
 
-class ProductDetails(APIView):
-    def get(self, request):
-        #profile = request.query_params.get('slug')
-        print(request.query_params.get('product_slug'))
-        product = get_object_or_404(Product, slug=request.query_params.get('product_slug'))
-        #profile = get_object_or_404(UserProfile, slug=request.query_params.get('slug'))
-        #user_profile = get_object_or_404(User, username=profile.username)
-        #list = Product.objects.filter(uploaded_by=user_profile)
-        product_response = ProductDetailSerializer(product).data
-        print(product_response)
-        return Response(product_response)
+
+
+
+
+
 
 class UserHome(APIView):
     permission_classes = (IsAuthenticated,)
@@ -318,3 +271,122 @@ class UserHome(APIView):
         serializer = UserProfileSerializer(profile)
         # Return the serialized data as a JSON response
         return Response(serializer.data)
+
+
+#MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM   KEEEP
+
+class ProductList(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+            print(request.query_params.get('username'))
+            user = get_object_or_404(User, username=request.query_params.get('username'))
+            print(user)
+            profile = get_object_or_404(UserProfile, username=user)
+
+            request_profile = get_object_or_404(UserProfile, username=request.user)
+            print(request_profile)
+            #user_profile = get_object_or_404(User, username=profile.username)
+            product_list = Product.objects.filter(uploaded_by=user)
+            
+            products = []
+            for data in product_list:
+                product_data = ProductDetailSerializer(data).data
+                is_liked = data.liked.filter(id=request.user.id).exists()
+                is_carted = data.shoppingcarted.filter(id=request.user.id).exists()
+                is_followed = request_profile.follows.filter(id=user.id).exists()
+                product_data['is_liked'] = is_liked
+                product_data['is_carted'] = is_carted
+                product_data['is_followed'] = is_followed
+                products.append(product_data)
+            
+            return Response(products)
+    
+
+class ProductDetails(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request):
+        print(request.query_params.get('product_slug'))
+        product = get_object_or_404(Product, slug=request.query_params.get('product_slug'))
+        requester = get_object_or_404(User, username=request.user)
+        requester_profile = get_object_or_404(UserProfile, username=requester)
+        product_response = ProductDetailSerializer(product).data
+        is_followed = requester_profile.follows.filter(id=product.uploaded_by.id).exists()
+        is_carted = product.shoppingcarted.filter(id=request.user.id).exists()
+        product_response['is_followed'] = is_followed
+        product_response['is_carted'] = is_carted
+        print(product_response)
+        return Response(product_response)
+    
+
+class MyCartView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request):
+        product_list = Product.objects.all()
+        products = []
+        for data in product_list:
+            if request.user in data.shoppingcarted.all():
+                product_data = ProductDetailSerializer(data).data
+                is_liked = data.liked.filter(id=request.user.id).exists()
+                product_data['is_liked'] = is_liked
+                products.append(product_data)
+        return Response(products)
+    
+
+class MyLikedView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request):
+        product_list = Product.objects.all()
+        products = []
+        for data in product_list:
+            if request.user in data.liked.all():
+                product_data = ProductDetailSerializer(data).data
+                is_liked = data.liked.filter(id=request.user.id).exists()
+                product_data['is_liked'] = is_liked
+                products.append(product_data)
+        return Response(products)
+    
+
+class CreateProductView(APIView):
+    serializer_class = ProductListSerializer
+    
+    def get(self, request):
+        print(request.user)
+        print('newview')
+        list = ProductFilter(request.GET, queryset=Product.objects.all())
+        products = []
+        for data in list.qs:
+            product = ProductListSerializer(data).data
+            is_liked = data.liked.filter(id=request.user.id).exists()
+            product['is_liked'] = is_liked
+            products.append(product)
+        return Response(products)
+
+    def post(self, request, format=None):
+        if not self.request.session.exists(self.request.session.session_key):
+            self.request.session.create()
+        
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+
+            name = serializer.data.get('name')
+            condition = serializer.data.get('condition')
+            sold_by = serializer.data.get('sold_by')
+            size =  serializer.data.get('size')
+            gender =  serializer.data.get('gender')
+            brand =  serializer.data.get('brand')
+            category =  serializer.data.get('category')
+            prize =  serializer.data.get('prize')
+            product_img =  serializer.data.get('product_img')
+
+            product = Product(name=name, condition=condition, sold_by=sold_by,
+                               size=size, gender=gender, brand=brand, category=category,
+                                 prize=prize)
+            product.save()
+
+            # Now, save the image associated with the product
+            product.product_img = product_img
+            product.save()
+            return Response(CreateProductSerializer(product).data, status=status.HTTP_201_CREATED)
+        else:
+            print("Validation errors", serializer.errors)
